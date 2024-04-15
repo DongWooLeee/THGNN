@@ -21,10 +21,10 @@ class Args:
         self.gpu = str(gpu)
         self.device = 'cpu'
         # data settings
-        adj_threshold = 0.1
+        adj_threshold = 0.1 # noise를 줄이기 위한 상관관계 threshold
         self.adj_str = str(int(100*adj_threshold))
-        self.pos_adj_dir = "pos_adj_" + self.adj_str
-        self.neg_adj_dir = "neg_adj_" + self.adj_str
+        self.pos_adj_dir = "pos_adj_" + self.adj_str # 미사용
+        self.neg_adj_dir = "neg_adj_" + self.adj_str # 미사용
         self.feat_dir = "features"
         self.label_dir = "label"
         self.mask_dir = "mask"
@@ -33,14 +33,14 @@ class Args:
         self.data_end = data_end
         self.pre_data = pre_data
         # epoch settings
-        self.max_epochs = 60
-        self.epochs_eval = 10
+        self.max_epochs = 60 #핛습 횟수
+        self.epochs_eval = 10 #몇 번마다 평가할지
         # learning rate settings
-        self.lr = 0.0002
-        self.gamma = 0.3
+        self.lr = 0.0002 # learning rate
+        self.gamma = 0.3 #  learning rate decay
         # model settings
-        self.hidden_dim = 128
-        self.num_heads = 8
+        self.hidden_dim = 128 #  hidden dimension
+        self.num_heads = 8 
         self.out_features = 32
         self.model_name = "StockHeteGAT"
         self.batch_size = 1
@@ -83,16 +83,22 @@ class Args:
 def fun_train_predict(data_start, data_middle, data_end, pre_data):
     args = Args()
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    
+    # 그래프 만들고!!!!#### 
+    
+    
     dataset = AllGraphDataSampler(base_dir="./data/data_train_predict/", data_start=data_start,
                                   data_middle=data_middle, data_end=data_end)
     val_dataset = AllGraphDataSampler(base_dir="./data/data_train_predict/", mode="val", data_start=data_start,
                                       data_middle=data_middle, data_end=data_end)
     dataset_loader = DataLoader(dataset, batch_size=args.batch_size, pin_memory=True, collate_fn=lambda x: x)
     val_dataset_loader = DataLoader(val_dataset, batch_size=1, pin_memory=True)
+    
+    
     model = eval(args.model_name)(hidden_dim=args.hidden_dim, num_heads=args.num_heads,
                                   out_features=args.out_features).to(args.device)
 
-    # train
+    # training 과정
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     cold_scheduler = StepLR(optimizer=optimizer, step_size=5000, gamma=0.9, last_epoch=-1)
     default_scheduler = cold_scheduler
@@ -111,7 +117,7 @@ def fun_train_predict(data_start, data_middle, data_end, pre_data):
             state = {'model': model.state_dict(), 'optimizer': optimizer.state_dict(), 'epoch': epoch + 1}
             torch.save(state, os.path.join(args.save_path, pre_data + "_epoch_" + str(epoch + 1) + ".dat"))
 
-    # predict
+    # predicting 과정
     checkpoint = torch.load(os.path.join(args.load_path, pre_data + "_epoch_" + str(epoch + 1) + ".dat"))
     model.load_state_dict(checkpoint['model'])
     data_code = os.listdir('./data/daily_stock')

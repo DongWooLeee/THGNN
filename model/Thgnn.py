@@ -55,7 +55,7 @@ class GraphAttnMultiHead(Module):
 
 
 class PairNorm(nn.Module):
-    def __init__(self, mode='PN', scale=1):
+    def __init__(self, mode='PN', scale=1): # Pair-Normalizaiton
         assert mode in ['None', 'PN', 'PN-SI', 'PN-SCS']
         super(PairNorm, self).__init__()
         self.mode = mode
@@ -84,11 +84,24 @@ class GraphAttnSemIndividual(Module):
         super(GraphAttnSemIndividual, self).__init__()
         self.project = nn.Sequential(nn.Linear(in_features, hidden_size),
                                      act,
-                                     nn.Linear(hidden_size, 1, bias=False))
-
+                                     nn.Linear(hidden_size, 1, bias=False)) # 같은 차원으로서 보내주기 위함임/
+    '''
+    Usage:
+        self.sem_gat = GraphAttnSemIndividual(in_features=hidden_dim,..)
+        support = support.squeeze()
+        pos_support, pos_attn_weights = self.pos_gat(support, pos_adj, requires_weight)
+        neg_support, neg_attn_weights = self.neg_gat(support, neg_adj, requires_weight)
+        support = self.mlp_self(support)
+        pos_support = self.mlp_pos(pos_support)
+        neg_support = self.mlp_neg(neg_support)
+        all_embedding = torch.stack((support, pos_support, neg_support), dim=1)
+        all_embedding, sem_attn_weights = self.sem_gat(all_embedding, requires_weight)
+    
+    '''
+    
     def forward(self, inputs, requires_weight=False):
-        w = self.project(inputs)
-        beta = torch.softmax(w, dim=1)
+        w = self.project(inputs) 
+        beta = torch.softmax(w, dim=1) # Beta를 구하기
         if requires_weight:
             return (beta * inputs).sum(1), beta
         else:
@@ -119,6 +132,7 @@ class StockHeteGAT(nn.Module):
         self.mlp_self = nn.Linear(hidden_dim, hidden_dim)
         self.mlp_pos = nn.Linear(out_features*num_heads, hidden_dim)
         self.mlp_neg = nn.Linear(out_features*num_heads, hidden_dim)
+        
         self.pn = PairNorm(mode='PN-SI')
         self.sem_gat = GraphAttnSemIndividual(in_features=hidden_dim,
                                               hidden_size=hidden_dim,

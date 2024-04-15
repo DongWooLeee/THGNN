@@ -23,11 +23,14 @@ def evaluate(model, features, adj_pos, adj_neg, labels, mask, loss_func=nn.L1Los
 
 
 def extract_data(data_dict, device):
+    '''
+    data_dict: {'pos_adj': pos_adj, 'neg_adj': neg_adj, 'features': features, 'labels': labels, 'mask': mask}
+    '''
     pos_adj = data_dict['pos_adj'].to(device).squeeze()
     neg_adj = data_dict['neg_adj'].to(device).squeeze()
     features = data_dict['features'].to(device).squeeze()
     labels = data_dict['labels'].to(device).squeeze()
-    mask = data_dict['mask']
+    mask = data_dict['mask'] # 분명 문제는 Semi-Supervised로서 정의되었음. 즉, label이 없는 것들에 대해서는 mask를 통해서 구분해줘야함
     return pos_adj, neg_adj, features, labels, mask
 
 
