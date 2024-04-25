@@ -26,11 +26,11 @@ def extract_data(data_dict, device):
     '''
     data_dict: {'pos_adj': pos_adj, 'neg_adj': neg_adj, 'features': features, 'labels': labels, 'mask': mask}
     '''
-    pos_adj = data_dict['pos_adj'].to(device).squeeze()
+    pos_adj = data_dict['pos_adj'].to(device).squeeze() #  따로 차원을 설정하지 않으면 1인 차원을 모두 제거, 주의할 점은 생각치도 못하게 batch가 1일 때 batch차원도 없애버리는 불상사가 발생할 수있다. 
     neg_adj = data_dict['neg_adj'].to(device).squeeze()
     features = data_dict['features'].to(device).squeeze()
     labels = data_dict['labels'].to(device).squeeze()
-    mask = data_dict['mask'] # 분명 문제는 Semi-Supervised로서 정의되었음. 즉, label이 없는 것들에 대해서는 mask를 통해서 구분해줘야함
+    mask = data_dict['mask'] # 문제는 Semi-Supervised로서 정의되었음. 즉, label이 없는 것들에 대해서는 mask를 통해서 구분해줘야함
     return pos_adj, neg_adj, features, labels, mask
 
 

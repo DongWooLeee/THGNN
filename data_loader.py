@@ -4,6 +4,11 @@ from torch.utils import data
 import pickle
 
 class AllGraphDataSampler(data.Dataset):
+    '''
+    base_dir = "./data/data_train_predict/"
+    
+    '''
+    
     def __init__(self, base_dir, gname_list=None, data_start=None, data_middle=None, data_end=None, mode="train"):
         self.data_dir = os.path.join(base_dir)
         self.mode = mode
@@ -14,7 +19,7 @@ class AllGraphDataSampler(data.Dataset):
             self.gnames_all = os.listdir(self.data_dir)
             self.gnames_all.sort()
         if mode == "train":
-            self.gnames_all = self.gnames_all[self.data_sDtart:self.data_middle] # 데이터 파일의 이름을 저장하는 리스트 -> train이므로 start~middle
+            self.gnames_all = self.gnames_all[self.data_sDtart:self.data_middle] # 데이터 파일의 이름을 저장하는 리스트 -> train이므로 start~middle 까지 가져온다
         elif mode == "val":
             self.gnames_all = self.gnames_all[self.data_middle:self.data_end] # 데이터 파일의 이름을 저장하는 리스트 -> val이므로 middle~end
         self.data_all = self.load_state()

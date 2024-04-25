@@ -9,7 +9,8 @@ class GraphAttnMultiHead(Module):
         super(GraphAttnMultiHead, self).__init__()
         self.num_heads = num_heads
         self.out_features = out_features
-        self.weight = Parameter(torch.FloatTensor(in_features, num_heads * out_features))
+        #MULTIHEAD ATTENTION을 위한 것
+        self.weight = Parameter(torch.FloatTensor(in_features, num_heads * out_features)) # in_features -> num_heads*out_features
         self.weight_u = Parameter(torch.FloatTensor(num_heads, out_features, 1))
         self.weight_v = Parameter(torch.FloatTensor(num_heads, out_features, 1))
         self.leaky_relu = nn.LeakyReLU(negative_slope=negative_slope)
@@ -29,6 +30,7 @@ class GraphAttnMultiHead(Module):
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
         self.weight.data.uniform_(-stdv, stdv)
+        #Normalizing Term in Attention Weight Calculation
         stdv = 1. / math.sqrt(self.weight_u.size(-1))
         self.weight_u.data.uniform_(-stdv, stdv)
         self.weight_v.data.uniform_(-stdv, stdv)
@@ -54,8 +56,13 @@ class GraphAttnMultiHead(Module):
             return support, None
 
 
-class PairNorm(nn.Module):
-    def __init__(self, mode='PN', scale=1): # Pair-Normalizaiton
+class PairNorm(nn.Module):    
+    '''    
+    Ways to prevent oversmoothing in GNNs.
+    Source: https://github.com/LingxiaoShawn/PairNorm/blob/master/layers.py
+
+    '''
+    def __init__(self, mode='PN', scale=1): # Pair-Normalizaiton, initializing scale to 1
         assert mode in ['None', 'PN', 'PN-SI', 'PN-SCS']
         super(PairNorm, self).__init__()
         self.mode = mode
@@ -64,7 +71,7 @@ class PairNorm(nn.Module):
     def forward(self, x):
         if self.mode == 'None':
             return x
-        col_mean = x.mean(dim=0)
+        col_mean = x.mean(dim=0) 
         if self.mode == 'PN':
             x = x - col_mean
             rownorm_mean = (1e-6 + x.pow(2).sum(dim=1).mean()).sqrt()
@@ -80,6 +87,10 @@ class PairNorm(nn.Module):
 
 
 class GraphAttnSemIndividual(Module):
+    '''
+    Node 별로 각 관계에 대한 attention을 구하는 방식. Positive와 negative, 그리고 self로부터 온 hidden state에 대한 attention을 구하게 된다. 
+    '''
+    
     def __init__(self, in_features, hidden_size=128, act=nn.Tanh()):
         super(GraphAttnSemIndividual, self).__init__()
         self.project = nn.Sequential(nn.Linear(in_features, hidden_size),
@@ -98,7 +109,8 @@ class GraphAttnSemIndividual(Module):
         all_embedding, sem_attn_weights = self.sem_gat(all_embedding, requires_weight)
     
     '''
-    
+    ## Beta는 HeteroGeneous Graph Attention Network의 산출물임.
+    # MLP 기반 ATTENTION
     def forward(self, inputs, requires_weight=False):
         w = self.project(inputs) 
         beta = torch.softmax(w, dim=1) # Beta를 구하기
@@ -143,11 +155,20 @@ class StockHeteGAT(nn.Module):
         )
 
         for m in self.modules():
-            if isinstance(m, nn.Linear):
+            if isinstance(m, nn.Linear): # Linear layer에 대해서는 xavier_uniform으로 초기화
                 nn.init.xavier_uniform_(m.weight, gain=0.02)
 
     def forward(self, inputs, pos_adj, neg_adj, requires_weight=False):
         _, support = self.encoding(inputs)
+        
+        '''
+        GRU 의 output 형태는 다음과 같다.
+        
+        
+        output: 크기가 (batch_size, sequence_length, hidden_size)인 텐서. 이 출력은 각 시간 스텝의 은닉 상태를 포함하고 있습니다. 이 출력은 사용되지 않습니다.
+        support: 크기가 (batch_size, hidden_size)인 텐서. 이것은 GRU의 마지막 은닉 상태를 나타냅니다. 이 출력은 입력 시퀀스에 대한 요약 정보로 간주될 수 있으며, 이후 다른 레이어에 입력으로 사용됩니다.
+        
+        '''
         support = support.squeeze()
         pos_support, pos_attn_weights = self.pos_gat(support, pos_adj, requires_weight)
         neg_support, neg_attn_weights = self.neg_gat(support, neg_adj, requires_weight)
