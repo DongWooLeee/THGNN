@@ -64,10 +64,10 @@ def fun(relation_dt, start_dt_month, end_dt_month,df1):
         day_last_code = []
         for j in range(len(code)):
             df3 = df2.loc[df2['code'] == code[j]] # code[j]에 해당하는 데이터만 가져옴. 즉 한 종목에 대해서 모든 date에 대한 데이터가 존재하는지 확인
-            y = df3[feature_cols].values # value 가져와서
+            y = df3[feature_cols].values # value 가져와서, 여기서는 node feature들을 의미한다. 
             if y.T.shape[1] == prev_date_num: # 만약 20일치 데이터가 다 존재한다면 -> 없으면 그 경우 대해서는 label을 구하지 않는다. -> 이래서 Semi-Supervised! 굳이 label을 다 달지 않고 달수 있는 경우에 대해서만 달아준다. 
                 one = [] # 이건 뭘 위한 거지?
-                feature_all.append(y) # feature_all에 추가
+                feature_all.append(y) # feature_all에 추가 -> 이 때는 node feature이다
                 mask.append(True) #  mask에 True 추가
                 label = df3.loc[df3['dt'] == end_data]['label'].values # label은 end_data에 해당하는 label을 가져옴
                 labels.append(label[0]) # labels에 추가
