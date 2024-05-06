@@ -43,7 +43,16 @@ def stock_cor_matrix(ref_dict, codes, n, processes=1):
         data[i, :] = calculate_pccs(ref_dict[codes[i]], ref_dict, n)
     return pd.DataFrame(data=data, index=codes, columns=codes)
 
-path1 = "./data/csi300.pkl"
+path1 = "./data/csi300.pkl" 
+
+#####
+
+# 미리 데이터를 준비해둔다!!!
+
+#####
+
+
+
 df1 = pickle.load(open(path1, 'rb'), encoding='utf-8')
 #prev_date_num Indicates the number of days in which stock correlation is calculated
 prev_date_num = 20
