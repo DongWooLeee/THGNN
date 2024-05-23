@@ -19,7 +19,7 @@ class AllGraphDataSampler(data.Dataset):
             self.gnames_all = os.listdir(self.data_dir)
             self.gnames_all.sort()
         if mode == "train":
-            self.gnames_all = self.gnames_all[self.data_sDtart:self.data_middle] # 데이터 파일의 이름을 저장하는 리스트 -> train이므로 start~middle 까지 가져온다
+            self.gnames_all = self.gnames_all[self.data_start:self.data_middle] # 데이터 파일의 이름을 저장하는 리스트 -> train이므로 start~middle 까지 가져온다
         elif mode == "val":
             self.gnames_all = self.gnames_all[self.data_middle:self.data_end] # 데이터 파일의 이름을 저장하는 리스트 -> val이므로 middle~end
         self.data_all = self.load_state()

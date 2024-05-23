@@ -9,7 +9,7 @@ class GraphAttnMultiHead(Module):
         super(GraphAttnMultiHead, self).__init__()
         self.num_heads = num_heads
         self.out_features = out_features
-        #MULTIHEAD ATTENTION을 위한 것
+        #MULTIHEAD ATTENTION을 위한 것 -> weight: gru를 통과하므로 [hidden_dim, num_heads*out_features]
         self.weight = Parameter(torch.FloatTensor(in_features, num_heads * out_features)) # in_features -> num_heads*out_features
         self.weight_u = Parameter(torch.FloatTensor(num_heads, out_features, 1))
         self.weight_v = Parameter(torch.FloatTensor(num_heads, out_features, 1))
@@ -36,13 +36,17 @@ class GraphAttnMultiHead(Module):
         self.weight_v.data.uniform_(-stdv, stdv)
 
     def forward(self, inputs, adj_mat, requires_weight=False):
-        support = torch.mm(inputs, self.weight)
-        support = support.reshape(-1, self.num_heads, self.out_features).permute(dims=(1, 0, 2))
-        f_1 = torch.matmul(support, self.weight_u).reshape(self.num_heads, 1, -1)
-        f_2 = torch.matmul(support, self.weight_v).reshape(self.num_heads, -1, 1)
-        logits = f_1 + f_2
-        weight = self.leaky_relu(logits)
-        masked_weight = torch.mul(weight, adj_mat).to_sparse()
+        support = torch.mm(inputs, self.weight) # inputs: (num_nodes, in_features), support: (num_nodes, num_heads*out_features)
+        support = support.reshape(-1, self.num_heads, self.out_features).permute(dims=(1, 0, 2))# support: (num_heads, num_nodes, out_features)
+        f_1 = torch.matmul(support, self.weight_u).reshape(self.num_heads, 1, -1) # f_1: (num_heads, 1, num_nodes)
+        f_2 = torch.matmul(support, self.weight_v).reshape(self.num_heads, -1, 1) # f_2: (num_heads, num_nodes, 1)
+        logits = f_1 + f_2 # logits: (num_heads, num_nodes, num_nodes)
+        weight = self.leaky_relu(logits) # weight: (num_heads, num_nodes, num_nodes)
+        print('weight 텐서의 shape:',weight.shape) 
+        print('---------------')
+        print('adj_mat 텐서의 shape:',adj_mat.shape) # adj_mat: (num_nodes_end, num_nodes_end) -> 근데 이건... start~ end 기준으로 다른 adj_mat을 넣어야 계산이 가능함.       
+        # 만약 이걸 그대로 쓰려면, predict하는 시점 기준으로 과거 시점에서 가져올 노드 개수가 모두 같아야함-> 맞춰줄 수 있음.
+        masked_weight = torch.mul(weight, adj_mat).to_sparse() # 
         attn_weights = torch.sparse.softmax(masked_weight, dim=2).to_dense()
         support = torch.matmul(attn_weights, support)
         support = support.permute(dims=(1, 0, 2)).reshape(-1, self.num_heads * self.out_features)
@@ -121,7 +125,7 @@ class GraphAttnSemIndividual(Module):
 
 
 class StockHeteGAT(nn.Module):
-    def __init__(self, in_features=6, out_features=8, num_heads=8, hidden_dim=64, num_layers=1):
+    def __init__(self, in_features=5, out_features=8, num_heads=8, hidden_dim=64, num_layers=1):
         super(StockHeteGAT, self).__init__()
         self.encoding = nn.GRU(
             input_size=in_features,
@@ -169,8 +173,8 @@ class StockHeteGAT(nn.Module):
         support: 크기가 (batch_size, hidden_size)인 텐서. 이것은 GRU의 마지막 은닉 상태를 나타냅니다. 이 출력은 입력 시퀀스에 대한 요약 정보로 간주될 수 있으며, 이후 다른 레이어에 입력으로 사용됩니다.
         
         '''
-        support = support.squeeze()
-        pos_support, pos_attn_weights = self.pos_gat(support, pos_adj, requires_weight)
+        support = support.squeeze() # support : (batch_size, hidden_size) => batch_size는 여기서 노드의 개수를 의미함.
+        pos_support, pos_attn_weights = self.pos_gat(support, pos_adj, requires_weight) # pos_support: (batch_size, hidden_size), pos_attn_weights: (batch_size, num_heads, num_nodes)
         neg_support, neg_attn_weights = self.neg_gat(support, neg_adj, requires_weight)
         support = self.mlp_self(support)
         pos_support = self.mlp_pos(pos_support)

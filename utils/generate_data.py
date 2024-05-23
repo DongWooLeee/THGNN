@@ -53,6 +53,27 @@ def fun(relation_dt, start_dt_month, end_dt_month,df1):
     print(dts)
     
     for i in tqdm(range(len(dts))):
+        
+        adj_all = pd.read_pickle('./data/data_train_predict/'+str(dts[i])[:10]+'.pkl') # pickle 파일을 읽어옴
+        adj_stock_set = list(adj_all.index)
+        pos_g = nx.Graph(adj_all > 0.1) # 0.1보다 큰 것만 connect. 즉 다 '연결'된 것으로 간주. 이 때 GAT로서 알아서 weight를 조절해줄 것이다.
+        pos_adj = nx.adjacency_matrix(pos_g).toarray() # Adjacency matrix로 바꿔줌
+        pos_adj = pos_adj - np.diag(np.diag(pos_adj)) # 대각선은 0으로 만들어줌
+        pos_adj = torch.from_numpy(pos_adj).type(torch.float32) # tensor로 바꿔줌
+        
+        neg_g = nx.Graph(adj_all < -0.1) # 상관관계가 -0.1 미만인 것들에 대해서도 testing.
+        neg_adj = nx.adjacency_matrix(neg_g) #Adjacnecy matrix로 바꿔주기
+        neg_adj.data = np.ones(neg_adj.data.shape) # 1로 바꿔주기 -> threshold 통화 후 0과 1로 바꿔짐
+        neg_adj = neg_adj.toarray() # array로 바꿔주기
+        neg_adj = neg_adj - np.diag(np.diag(neg_adj)) # 대각선은 0으로 만들어주기
+        neg_adj = torch.from_numpy(neg_adj).type(torch.float32) # tensor로 바꿔주기
+        
+        print('neg_adj over')
+        print(neg_adj.shape)
+        
+        
+        
+        
         end_data=dts[i] # 가장 마지막 날짜
         start_data = stock_trade_data[stock_trade_data.index(end_data)-(prev_date_num - 1)] # 처음 시작하는 날짜
         df2 = df1.loc[df1['dt'] <= end_data]

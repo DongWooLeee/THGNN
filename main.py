@@ -87,7 +87,7 @@ def fun_train_predict(data_start, data_middle, data_end, pre_data):
     # 그래프 만들고!!!!#### 
     
     
-    dataset = AllGraphDataSampler(base_dir="./data/data_train_predict/", data_start=data_start,
+    dataset = AllGraphDataSampler(base_dir="./data/data_train_predict/", data_start=data_start, # 형태는, data_train_predict/에 있는 파일들을 가져옴 -> [relation_dt, start_dt_month, end_dt_month, df1]. relation_dt는 stock correlation matrix.
                                   data_middle=data_middle, data_end=data_end)
     val_dataset = AllGraphDataSampler(base_dir="./data/data_train_predict/", mode="val", data_start=data_start,
                                       data_middle=data_middle, data_end=data_end)

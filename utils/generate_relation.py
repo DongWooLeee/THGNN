@@ -71,7 +71,7 @@ for i in range(len(dt)): # datetime list가 생성되었는데, 이는 각 달�
     start_data = stock_trade_data[stock_trade_data.index(end_data)-(prev_date_num - 1)]
     df2 = df2.loc[df2['dt'] <= end_data]
     df2 = df2.loc[df2['dt'] >= start_data]
-    code = sorted(list(set(df2['code'].values.tolist())))
+    code = sorted(list(set(df2['code'].values.tolist()))) # 
     test_tmp = {}
     for j in tqdm(range(len(code))):
         df3 = df2.loc[df2['code'] == code[j]]
